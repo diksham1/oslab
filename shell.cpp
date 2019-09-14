@@ -15,6 +15,7 @@ using namespace std;
 #define MAX_NUM_TOKENS 100
 #define MAX_TOKEN_SIZE 100
 #define MAX_COMMAND_SIZE 100
+#define ERROR_CODE_EXEC 2
 
 
 /* ......................................................................................
@@ -75,13 +76,13 @@ void processCommand(char* command) {
 	assert(childPID != -1);
 	
 	if (childPID == 0) {
-		int exitCode = 0;
-		exitCode = execvp(args[0], args);
-		exit(exitCode);
+		execvp(args[0], args);
+		exit(errno);
 	} else {
-		pid_t childExitCode = wait(NULL);
-		if (childExitCode == -1) {
-			cout <<"Command not found\n";
+		int childExitCode = 0;
+		wait(&childExitCode);
+		if (WEXITSTATUS(childExitCode) == ERROR_CODE_EXEC) {
+			cout << args[0] <<": Command not found\n";
 		}
 	}
 }
@@ -109,11 +110,7 @@ int main(int argc, char *argv[]) {
 interact:	while (1) {
 			char* cmd = (char *)malloc(MAX_COMMAND_SIZE*sizeof(char));
 			cout <<"Diksha@Tux:~" << get_current_dir_name() <<"$ ";
-			cin.getline(cmd, MAX_COMMAND_SIZE);
-			if (cmd == "\n") {
-				cout << '\n';
-				continue;
-			}
+			cin.getline(cmd, MAX_COMMAND_SIZE);	
 			processCommand(cmd);	
 		}
 	}
