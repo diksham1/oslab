@@ -4,25 +4,97 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <algorithm>
-
+#include <sys/wait.h>
+#include <cstring>
 
 //#define MAX_BUFFER_SIZE 100
 
 using namespace std;
 
-void processCommand(string command) {
+#define MAX_NUM_TOKENS 100
+#define MAX_TOKEN_SIZE 100
+#define MAX_COMMAND_SIZE 100
+
+
+/* ......................................................................................
+*
+*  Breaks the input string into tokens and adds a NULL at the end
+*  e.g echo hello world will be broken down into {"echo", "hello world", NULL}
+*  (Strings are NULL terminated) 
+*
+*  ......................................................................................
+*/
+
+
+char ** nullTerminatedTokenize(char* command) {
+	// One extra token for holding NULL pointer at the end
+	char **args = (char **) malloc((MAX_NUM_TOKENS+1) * sizeof(char *));
+	char *token = (char *) malloc(MAX_TOKEN_SIZE * sizeof(char));
+		
+	int tokenIndex = 0;
+	int tokenNum = 0;
+	
+	for (int i = 0; command[i] != '\0'; i++) {
+		char readChar = command[i];
+		if(tokenNum == 0 && (readChar == ' ' || readChar == '\t' || readChar == '\n')) {
+			token[tokenIndex] = '\0';
+			args[tokenNum++] =	token;
+			token = (char *) malloc(MAX_TOKEN_SIZE * sizeof (char)); 
+			tokenIndex = 0;
+		} else {
+			token[tokenIndex++] = readChar;
+		}
+	}
+ 
+	token[tokenIndex] = '\0';
+	args[tokenNum++] = token;
+	token = NULL;
+	args[tokenNum++] = NULL;
+
+	return args;
+	
+}
+
+/* .....................................................................................
+*
+*  Processes the command recieved as input from the user
+*  INPUT: string with command and arguments, 
+*  e.g "echo hello world" to display "hello world" (without quotes) on the screen
+*
+*  .....................................................................................
+*/
+
+void processCommand(char* command) {
 	pid_t childPID = fork();
 	assert(childPID != -1);
-
+	
 	if (childPID == 0) {
-		string cmd = "/bin/" + command;
-		char cstr[cmd.size() + 1];
-		copy(cmd.begin(), cmd.end(), cstr);
-		cstr[cmd.size()] = '\0';
-		char *args[] = {cstr, NULL};
-		execv(args[0], args);
+		char **args = nullTerminatedTokenize(command);
+		int exitCode = 0;
+/*		int i = 0;
+		while (args[i]) {
+			cout << args[i++] << endl;
+		}*/
+		exitCode = execvp(args[0], args);
+		exit(exitCode);
+	} else {
+		pid_t childExitCode = wait(NULL);
+		if (childExitCode == -1) {
+			cout <<"Command not found\n";
+		}
 	}
 }
+
+/* .........................................................................................
+*
+*  The main function 
+*  Supports: Interactive mode and Batch Mode
+*  Interactive Mode: User gives command through shell prompt
+*  Batch Mode: Batch file containing commands is fed as command line argument to main
+*  Once done with processing the batch file commands, shells drops back to interactive mode
+*
+*  .........................................................................................
+*/
 
 int main(int argc, char *argv[]) {
 	ifstream file;
@@ -32,20 +104,24 @@ int main(int argc, char *argv[]) {
 		file.open(fname);
 	}
 	
-	if (argc < 2 || !file) {		
+	if (argc < 2 || !file) {
 interact:	while (1) {
-			string cmd;
-			cout <<"$ ";
-			getline(cin, cmd);
-			if (cmd == "\n")	continue;
+			char* cmd = (char *)malloc(MAX_COMMAND_SIZE*sizeof(char));
+			cout <<"Diksha@Tux:~$ ";
+			cin.getline(cmd, MAX_COMMAND_SIZE);
+			if (cmd == "\n") {
+				cout << '\n';
+				continue;
+			}
 			processCommand(cmd);	
 		}
 	}
 
 	else {
 		while (1) {	
-			string cmd;
-			getline(file, cmd, '\n');
+			cout <<"Inparent";
+			char* cmd = (char *)malloc(MAX_COMMAND_SIZE*sizeof(char));
+			file.getline(cmd,MAX_COMMAND_SIZE);
 			if (file.eof())	break;
 			processCommand(cmd);
 			cout << endl;
