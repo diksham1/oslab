@@ -111,7 +111,12 @@ interact:	while (1) {
 			char* cmd = (char *)malloc(MAX_COMMAND_SIZE*sizeof(char));
 			cout <<"Diksha@Tux:~" << get_current_dir_name() <<"$ ";
 			cin.getline(cmd, MAX_COMMAND_SIZE);	
-			processCommand(cmd);	
+
+			// *cmd will be an empty null terminated string in 
+			// case of a blank enter press
+
+			if (*cmd != '\0')	//ignore the blank presses of enter
+				processCommand(cmd);	
 		}
 	}
 
