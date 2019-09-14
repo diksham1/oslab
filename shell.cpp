@@ -119,7 +119,6 @@ interact:	while (1) {
 
 	else {
 		while (1) {	
-			cout <<"Inparent";
 			char* cmd = (char *)malloc(MAX_COMMAND_SIZE*sizeof(char));
 			file.getline(cmd,MAX_COMMAND_SIZE);
 			if (file.eof())	break;
