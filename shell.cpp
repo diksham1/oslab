@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <sys/wait.h>
 #include <cstring>
+#include <unistd.h>
 
 //#define MAX_BUFFER_SIZE 100
 
@@ -65,16 +66,16 @@ char ** nullTerminatedTokenize(char* command) {
 */
 
 void processCommand(char* command) {
+	char **args = nullTerminatedTokenize(command);
+	if (strcmp(args[0], "cd") == 0) {
+		chdir(args[1]);
+		return;
+	}
 	pid_t childPID = fork();
 	assert(childPID != -1);
 	
 	if (childPID == 0) {
-		char **args = nullTerminatedTokenize(command);
 		int exitCode = 0;
-/*		int i = 0;
-		while (args[i]) {
-			cout << args[i++] << endl;
-		}*/
 		exitCode = execvp(args[0], args);
 		exit(exitCode);
 	} else {
@@ -107,7 +108,7 @@ int main(int argc, char *argv[]) {
 	if (argc < 2 || !file) {
 interact:	while (1) {
 			char* cmd = (char *)malloc(MAX_COMMAND_SIZE*sizeof(char));
-			cout <<"Diksha@Tux:~$ ";
+			cout <<"Diksha@Tux:~" << get_current_dir_name() <<"$ ";
 			cin.getline(cmd, MAX_COMMAND_SIZE);
 			if (cmd == "\n") {
 				cout << '\n';
@@ -123,7 +124,6 @@ interact:	while (1) {
 			file.getline(cmd,MAX_COMMAND_SIZE);
 			if (file.eof())	break;
 			processCommand(cmd);
-			cout << endl;
 		}
 		goto interact;
 	}
